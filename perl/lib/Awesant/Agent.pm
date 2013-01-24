@@ -681,7 +681,7 @@ sub get_config {
 sub write_pidfile {
     my $self = shift;                                                                                                               
     open my $fh, ">", $self->{args}->{pidfile}
-        or die "unable to write pid file - $!";
+        or die "unable to write pid file $self->{args}->{pidfile}: $!";
     print $fh $$;
     close $fh;
 }
