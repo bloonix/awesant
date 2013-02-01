@@ -119,9 +119,10 @@ With this agent configuration your logstash should be configured as follows:
         redis {
             host => "127.0.0.1"
             port => 6379
+            data_type => "list"
             db => 0
             key => "syslog"
-            type => "syslog"
+            type => "redis"
             format => "json_event"
         }
     }
