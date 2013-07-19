@@ -100,5 +100,6 @@ EOF
 touch index.txt
 echo '000a' > serial.txt
 
-openssl ca -in req.csr -cert ca.crt -keyfile ca.key -outdir . -batch \
-    -md sha256 -config minimal.conf -days $DAYS -out ssl.crt
+openssl ca -in $CSRFILE -cert $CACRTFILE -keyfile \
+        $CAKEYFILE -outdir . -batch -md sha256 \
+        -config minimal.conf -days $DAYS -out $CRTFILE -notext
