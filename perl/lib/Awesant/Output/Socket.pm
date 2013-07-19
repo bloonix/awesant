@@ -88,10 +88,9 @@ Default: yes
 
 =head2 ssl_ca_file, ssl_cert_file, ssl_key_file, ssl_verify_mode
 
-If you want to use ssl connections to the server you can set the path to your ca, certificate and key file.
+If you want to use ssl connections to the server you can set the path to your ca or certificate file.
 
-The option ssl_verify_mode can be set to SSL_VERIFY_PEER, SSL_VERIFY_FAIL_IF_NO_PEER_CERT,
-SSL_VERIFY_CLIENT_ONCE or SSL_VERIFY_NONE. Lowercase is allowed.
+The option ssl_verify_mode can be set to SSL_VERIFY_PEER, or SSL_VERIFY_NONE. Lowercase is allowed.
 
 This options are equivalent to the options of IO::Socket::SSL.
 
@@ -401,7 +400,7 @@ sub validate {
         ssl_verify_mode => {
             type => Params::Validate::SCALAR,
             optional => 1,
-            regex => qr!^SSL_VERIFY_(PEER|FAIL_IF_NO_PEER_CERT|CLIENT_ONCE|NONE)\z!,
+            regex => qr!^SSL_VERIFY_(PEER|NONE)\z!,
         },
     });
 
@@ -409,11 +408,9 @@ sub validate {
         $options{persistent} = 0;
     }
 
-    if ($options{ssl_cert_file} && $options{ssl_key_file}) {
+    if ($options{ssl_cert_file} || $options{ssl_ca_file}) {
         require IO::Socket::SSL;
         $options{sockmod} = "IO::Socket::SSL";
-    } elsif ($options{ssl_cert_file} || $options{ssl_key_file}) {
-        die "parameter ssl_cert_file and ssl_key_file are both mandatory for ssl sockets";
     }
 
     if (!$options{sockmod}) {
@@ -438,10 +435,6 @@ sub validate {
 
         if ($options{ssl_verify_mode} eq "SSL_VERIFY_PEER") {
             $options{sockopts}{SSL_verify_mode} = 0x01;
-        } elsif ($options{ssl_verify_mode} eq "SSL_VERIFY_FAIL_IF_NO_PEER_CERT") {
-            $options{sockopts}{SSL_verify_mode} = 0x02;
-        } elsif ($options{ssl_verify_mode} eq "SSL_VERIFY_CLIENT_ONCE") {
-            $options{sockopts}{SSL_verify_mode} = 0x04;
         } elsif ($options{ssl_verify_mode} eq "SSL_VERIFY_NONE") {
             $options{sockopts}{SSL_verify_mode} = 0x00;
         }

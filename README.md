@@ -23,7 +23,7 @@ Currently supported outputs:
 ## Pre-installation
 
 Awesant is written in Perl. So you have to install some Perl packages at first
-to run Awesant on your machine. Let us have a look on what you need to install:
+to run Awesant on your machine. Let us have a look at what you need to install:
 
     Log::Handler
     Params::Validate
@@ -37,7 +37,7 @@ If you want to transport logs via SSL and the Socket output then you need to ins
 
 If you want to transport logs to RabbitMQ you need to install Net::RabbitMQ.
 
-You can install the packages with your favorite package manager or with cpan tool.
+You can install the packages with your favorite package manager, or from CPAN.
 
     cpan -i Log::Handler
     cpan -i Params::Validate
@@ -51,17 +51,22 @@ Just download the project and execute
     make
     make install
 
-Or create a RPM with
+Or create an RPM with
 
-    git clone https://github.com/bloonix/awesant.git awesant-$version
+    VERSION=v0.10
+    git clone https://github.com/bloonix/awesant.git
+    cd awesant
+    git checkout $VERSION
     tar -czf awesant-$version.tar.gz awesant-$version
     rpmbuild -ta awesant-$version.tar.gz
     rpm -i rpmbuild/RPMS/noarch/awesant...
 
 Or create a deb-package with
 
-    git clone https://github.com/bloonix/awesant.git awesant-$version
-    cd awesant-$version
+    VERSION=v0.10
+    git clone https://github.com/bloonix/awesant.git
+    cd awesant
+    git checkout $VERSION
     dpkg-buildpackage
 
 ## Install Awesant from a repository
@@ -82,7 +87,7 @@ The main configuration file of the Awesant agent is
 
     /etc/awesant/agent.conf
 
-The configuration style is very simple. You can define inputs, outputs, a logger and some global configuration parameter.
+The configuration style is very simple. You can define inputs, outputs, a logger and some global configuration parameters.
 
 Inputs are the log files you want to ship. Outputs are the transports you want to use to ship the log files.
 
@@ -92,7 +97,7 @@ Example configuration:
     # Default: 500 (ms)
     poll 500
 
-    # How much lines to request from the inputs by each poll.
+    # How many lines to request from the inputs by each poll.
     # Default: 100 (count)
     lines 100
 
@@ -150,9 +155,10 @@ With this agent configuration your logstash should be configured as follows:
 
 * It is possible to set a comma separated list of types for outputs.
 * It is possible to set wildcards for file inputs.
-* If a wildcard is used then Awesant is watching the path for new files. If a new file is created then Awesant tails the new file automatically, so you do not need to restart Awesant.
+* If a wildcard is used then Awesant will watch the glob pattern for new files.
+* If a new file is created then Awesant will tail the new file automatically, so you do not need to restart the service.
 
-As example if you has different inputs, such as
+As example if you have different inputs, such as
 
     input {
         file {
@@ -176,9 +182,11 @@ then you can use one output for multiple inputs:
     }
 
 In this case the redis-output is bound to the inputs 'apache-access-log'
-and 'syslog', but if the log events are pushed to the output then the
-type of the input is used for the json event. That means that '@type' is
-set to the type of the input, not of the output.
+and 'syslog'.
+
+When the log events are pushed to the output the type of the input is used for
+the JSON event. This means that '@type' is set to the type of the input, not of
+the output.
 
 # SSL and authentication support
 
@@ -189,11 +197,14 @@ The scenario could looks like
     Awesant output socket -> Awesant input socket -> Redis -> Logstash
 
 You can use the script 'awesant-create-cert' to create a cert bundle for Awesant.
+This should be run from the machine where the redis and the input socket is to be run.
 
     awesant-create-cert /etc/awesant 4096 10000
 
-Please note that the certificates should not be used for criticial production environments.
-The created certificates are not trusted.
+You should now copy the /etc/awesant/certs/ca.crt to /etc/awesant/certs/ca.crt
+on any of the log shipping machines you wish to configure.
+
+    scp /etc/awesant/certs/ca.crt root@logshippingnode:/etc/awesant/certs/
 
 ## Awesant output socket
 
@@ -216,8 +227,9 @@ Create the following configuration on the machines with the log files you want t
             host redis-machine-remote-addr
             port 25801
             auth your-very-very-very-long-password
-            ssl_cert_file /etc/awesant/certs/ssl.crt
-            ssl_key_file  /etc/awesant/certs/ssl.key
+            ssl_ca_file /etc/awesant/certs/ssl.crt
+	    # This should be on by default, but we set it to be safe.
+	    ssl_verify_mode SSL_VERIFY_PEER
         }
     }
 

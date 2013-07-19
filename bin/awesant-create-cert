@@ -84,6 +84,21 @@ openssl req -new -x509 -nodes -days $DAYS \
         -key $CAKEYFILE -batch > $CACRTFILE
 openssl req -newkey rsa:$BITS -days $DAYS \
         -nodes -keyout $KEYFILE -batch > $CSRFILE
-openssl x509 -req -in $CSRFILE -days $DAYS \
-        -CA $CACRTFILE -CAkey $CAKEYFILE -set_serial $SERIAL > $CRTFILE
 
+cat << EOF > minimal.conf
+[ ca ]
+default_ca = CA_default
+
+[ CA_default ]
+database = index.txt
+serial = serial.txt
+policy = policy_any
+
+[ policy_any ]
+EOF
+
+touch index.txt
+echo '000a' > serial.txt
+
+openssl ca -in req.csr -cert ca.crt -keyfile ca.key -outdir . -batch \
+	-md sha256 -config minimal.conf -days $DAYS -out ssl.crt
