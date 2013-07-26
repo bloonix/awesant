@@ -1,4 +1,5 @@
 CONFIG=Makefile.config
+SHELL := /bin/bash
 
 include $(CONFIG)
 
