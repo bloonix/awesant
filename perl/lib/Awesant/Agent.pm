@@ -266,7 +266,7 @@ sub load_output {
             $types =~ s/\s+\z//;
 
             if ($types eq "*") {
-                foreach my $type (@{$self->inputs}}) {
+                foreach my $type (@{$self->inputs}) {
                     push @{$self->outputs->{$type}}, $object;
                 }
                 next; # output
