@@ -2,7 +2,7 @@
 
 ## Description
 
-This transport module connects to a Redis database and ships data via LPUSH.
+This transport module connects to a Redis database and ships data via RPUSH.
 
 ## Options
 
@@ -41,4 +41,12 @@ Default: not set
 The key is mandatory and is used to transport the data. This key is necessary for logstash to pull the data from the Redis database.
 
 Default: not set
+
+### bulk
+
+The number of lines to attempt to send to Redis at once.
+
+May help to increase in high latency environments with high log throughput.
+
+Default: 1
 

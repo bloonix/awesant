@@ -16,7 +16,7 @@ Awesant::Output::Redis - Send messages to a Redis database.
 
 =head1 DESCRIPTION
 
-This transport module connects to a Redis database and ships data via LPUSH.
+This transport module connects to a Redis database and ships data via RPUSH.
 
 =head1 OPTIONS
 
@@ -56,6 +56,14 @@ The key is mandatory and is used to transport the data. This key is necessary fo
 
 Default: not set
 
+=head2 bulk
+
+The number of lines to attempt to send to Redis at once.
+
+May help to increase in high latency environments with high log throughput.
+
+Default: 1
+
 =head1 METHODS
 
 =head2 new
@@ -68,7 +76,7 @@ Connect to the redis database.
 
 =head2 push
 
-Push data to redis via LPUSH command.
+Push data to redis via RPUSH command.
 
 =head2 validate
 
@@ -114,6 +122,8 @@ sub new {
     my $class = shift;
     my $opts = $class->validate(@_);
     my $self = bless $opts, $class;
+
+    $self->{pipeline_queue} = [];
 
     $self->{select_database} = join("\r\n",
         '*2', # SELECT + db
@@ -187,7 +197,7 @@ sub connect {
         "redis server $self->{host}:$self->{port}"
     );
 
-    $self->_send($self->{select_database})
+    $self->_send([$self->{select_database}])
         or die "unable to select redis database";
 
     $self->log->notice(
@@ -203,18 +213,29 @@ sub push {
     my $ret = 0;
 
     $line = join("\r\n",
-        '*3', # LPUSH + key + line
+        '*3', # RPUSH + key + line
         '$5',
-        'LPUSH',
+        'RPUSH',
         '$' . length $self->{key},
         $self->{key},
         '$' . length $line,
         $line . "\r\n"
     );
 
-    $ret = $self->_send($line);
-
-    return $ret;
+    push(@{$self->{pipeline_queue}}, $line);
+    if (scalar @{$self->{pipeline_queue}} >= $self->{bulk}) {
+        if($ret = $self->_send($self->{pipeline_queue})) {
+            $#{$self->{pipeline_queue}} = -1;
+            return $ret;
+        } else {
+            # Last push failed, the Agent will try to push it again
+            # later, so we drop it here
+            pop(@{$self->{pipeline_queue}});
+            return $ret;
+        }
+    } else {
+        return 1;
+    }
 }
 
 sub validate {
@@ -244,6 +265,10 @@ sub validate {
         key => {
             type => Params::Validate::SCALAR,
         },
+        bulk => {
+            type => Params::Validate::SCALAR,
+            default => 1,
+        },
     });
 
     return \%options;
@@ -256,7 +281,8 @@ sub log {
 }
 
 sub _send {
-    my ($self, $data) = @_;
+    my ($self, $commands) = @_;
+    my $data = join('', @$commands);
 
     my $timeout  = $self->{timeout};
     my $response = "";
@@ -273,7 +299,7 @@ sub _send {
         my $offset = 0;
 
         if ($self->log->is_debug) {
-            $self->log->debug("send to redis server $self->{host}:$self->{port}: $data");
+            $self->log->debug("sending to redis server $self->{host}:$self->{port}: $data");
         }
 
         while ($rest) {
@@ -287,22 +313,26 @@ sub _send {
             $offset += $written;
         }
 
-        $response = <$sock>;
+        foreach (@$commands) {
+            $response = <$sock>;
+            unless($response) {
+                    die "no response from redis server $self->{host}:$self->{port}";
+            }
+            unless ($response =~ /^(:\d+|\+OK)/) {
+                    if ($response =~ /^\-ERR/) {
+                        die "redis server returned an error: $response";
+                    } else {
+                        die "unknown response from redis server: $response";
+                    }
+            }
+        }
         alarm(0);
     };
 
-    if (!$@ && defined $response && $response =~ /^(:\d+|\+OK)/) {
+    if (!$@) {
         return 1;
-    }
-
-    if ($@) {
-        $self->log->error($@);
-    } elsif (!defined $response) {
-        $self->log->error("no response received from redis server $self->{host}:$self->{port}");
-    } elsif ($response =~ /^\-ERR/) {
-        $self->log->error("redis server returns an error: $response");
     } else {
-        $self->log->error("unknown response from redis server: $response");
+        $self->log->error($@);
     }
 
     # Reset the complete connection.
