@@ -164,8 +164,18 @@ With this agent configuration your logstash should be configured as follows:
 * It is possible to set a comma separated list of types for outputs.
 * It is possible to set wildcards for file inputs.
 * It is possible to set a wildcard as output type.
+* It is possible to ``include`` other configuration files.
 * If a wildcard is used then Awesant will watch the glob pattern for new files.
 * If a new file is created then Awesant will tail the new file automatically, so you do not need to restart the service.
+
+As example if you want to include other configuration files
+
+    input {
+        include /etc/awesant/input.conf
+    }
+    output {
+        include /etc/awesant/output.conf
+    }
 
 As example if you have different inputs, such as
 

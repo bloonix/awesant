@@ -163,6 +163,14 @@ sub _parse_config {
             $self->_parse_config($fh, $value);
             next;
         }
+        elsif ($line =~ /^\s*include\s*(.*)/) {
+          open my $fh_subconfig, "<", $1
+               or die "Unable to open file '$1' for reading - $!";
+          $self->_parse_config($fh_subconfig, $config);
+          close $fh_subconfig;
+          undef $fh_subconfig;
+          next;
+        }
 
         # A key value pair. The value can be an empty string.
         elsif ($line =~ /^([^\s]+)\s*(.*)/) {
