@@ -171,7 +171,7 @@ sub get_lastpos {
     my $posfile = "$libdir/awesant-$basename.pos";
 
     if (-e $old_posfile) {
-        rename $old_postfile, $posfile;
+        rename $old_posfile, $posfile;
     }
 
     if (-e $posfile) {
