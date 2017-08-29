@@ -1,3 +1,7 @@
+awesant (0.23) released at 2017-08-29
+
+    * Added feature multiline for inputs.
+
 awesant (0.22) released at 2016-08-12
 
     * Fixed: determine if systemctl is in use.

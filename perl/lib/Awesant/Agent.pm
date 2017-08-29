@@ -200,7 +200,7 @@ use constant PARENT_PID => $$;
 # Just some simple accessors
 __PACKAGE__->mk_accessors(qw/config log json watch filed inputs outputs/);
 
-our $VERSION = "0.22";
+our $VERSION = "0.23";
 
 sub run {
     my ($class, %args) = @_;
@@ -298,7 +298,7 @@ sub load_input {
 
             # Shift the agent configuration parameter.
             my %agent_config;
-            foreach my $param (qw/type tags add_field workers format/) {
+            foreach my $param (qw/type tags add_field workers format multiline/) {
                 if (exists $plugin_config->{$param}) {
                     $agent_config{$param} = delete $plugin_config->{$param};
                 }
@@ -641,6 +641,18 @@ sub run_log_shipper {
             # is set to now, so the sleep value should be 0.
             $time = Time::HiRes::gettimeofday();
             $self->log->debug("pulled", scalar @$lines, "lines from input type $itype path $ipath");
+
+           if ($input->{multiline}) {
+               my @new;
+               foreach my $line (@$lines) {
+                   if ($line =~ $input->{multiline} && @new > 0) {
+                       $new[-1] .= "\n$line";
+                   } else {
+                       push @new, $line;
+                   }
+               }
+               $lines = \@new;
+           }
 
             # Process each event and store each event by the output type.
             my (%prepared_events, %lines_by_type);
@@ -1052,6 +1064,10 @@ sub validate_agent_config {
             regex => qr/^\d+\z/,
             default => 0,
         },
+        multiline => {
+            type => Params::Validate::SCALAR,
+            optional => 1
+        }
     });
 
     if ($options{format} eq "json_event") {

@@ -1,3 +1,9 @@
+awesant (0.23-1) unstable; urgency=low
+
+    * Added feature multiline for inputs.
+
+ -- Jonny Schulz <js@bloonix.de>  Tue, 29 Aug 2017 15:03:30 +0200
+
 awesant (0.22-1) unstable; urgency=low
 
     * Fixed: determine if systemctl is in use.

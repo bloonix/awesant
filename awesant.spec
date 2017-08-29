@@ -1,6 +1,6 @@
 Summary: Awesant is a log shipper for logstash.
 Name: awesant
-Version: 0.22
+Version: 0.23
 Release: 1%{?dist}
 License: distributable
 Group: System Environment/Daemons
@@ -99,6 +99,8 @@ rm -rf %{buildroot}
 %{_mandir}/man?/Awesant::*
 
 %changelog
+* Tue Aug 29 2017 Jonny Schulz <js@bloonix.de> - 0.23-1
+- Added feature multiline for inputs.
 * Fri Aug 12 2016 Jonny Schulz <js@bloonix.de> - 0.22-1
 - Fixed: determine if systemctl is in use.
 * Fri Nov 06 2015 Jonny Schulz <js@bloonix.de> - 0.21-1
